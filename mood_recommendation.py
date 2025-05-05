@@ -25,8 +25,8 @@ TELUGU_URLS = {
 }
 
 # Imgflip API Credentials
-IMGFLIP_USERNAME = "S.K.Tanusri"
-IMGFLIP_PASSWORD = "Tanusri02"
+IMGFLIP_USERNAME = "your_username"
+IMGFLIP_PASSWORD = "your_pasword"
 
 # Load OpenCV face detection model
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
