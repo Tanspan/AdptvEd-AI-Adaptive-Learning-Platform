@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Explorer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #01021F;
+            color: #FFFFFF;
+            cursor: none;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #01021F;
+            color: white;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            color: #FFFFFF;
+            letter-spacing: 1px;
+            background: linear-gradient(90deg, #4C2EB6, #482BB3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4A2CB1;
+        }
+
+        .category-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .category-btn {
+            padding: 14px 18px;
+            background-color: rgba(74, 44, 177, 0.2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-btn:hover {
+            background-color: #4A2CB1;
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(76, 46, 182, 0.4);
+        }
+
+        .category-btn.active {
+            background-color: #4C2EB6;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(76, 46, 182, 0.4);
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            background-color: #01021F;
+        }
+
+        .search-container {
+            display: flex;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 15px 20px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: none;
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .search-btn {
+            padding: 15px 25px;
+            background: linear-gradient(90deg, #4C2EB6, #482BB3);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .search-btn:hover {
+            background: linear-gradient(90deg, #482BB3, #4C2EB6);
+            letter-spacing: 1px;
+        }
+
+        .videos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .video-card {
+            background-color: rgba(74, 44, 177, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(74, 44, 177, 0.2);
+        }
+
+        .video-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(76, 46, 182, 0.3);
+            border-color: #4A2CB1;
+        }
+
+        .video-thumbnail {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, #4C2EB6, #01021F);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .video-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .video-card:hover .video-thumbnail img {
+            transform: scale(1.05);
+        }
+
+        .play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background-color: rgba(76, 46, 182, 0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .video-card:hover .play-icon {
+            opacity: 1;
+        }
+
+        .play-icon:before {
+            content: "";
+            width: 0;
+            height: 0;
+            border-top: 12px solid transparent;
+            border-bottom: 12px solid transparent;
+            border-left: 18px solid white;
+            margin-left: 5px;
+        }
+
+        .video-info {
+            padding: 20px;
+        }
+
+        .video-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 18px;
+            color: #FFFFFF;
+        }
+
+        .video-category {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            display: inline-block;
+            padding: 5px 12px;
+            background-color: rgba(74, 44, 177, 0.3);
+            border-radius: 20px;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+
+        .active-category {
+            padding: 15px 0;
+            margin-bottom: 25px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #FFFFFF;
+            background: linear-gradient(90deg, #4C2EB6, #482BB3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+
+        .cursor-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #4C2EB6;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: screen;
+        }
+
+        .ripple {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: rgba(76, 46, 182, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: fadeOut 0.5s linear;
+        }
+
+        .circle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: rgba(76, 46, 182, 0.3);
+            border-radius: 50%;
+            transform: scale(1);
+            pointer-events: none;
+            animation: grow 0.8s linear;
+        }
+
+        .user-info {
+            margin-top: auto;
+            padding-top: 25px;
+            border-top: 1px solid rgba(74, 44, 177, 0.3);
+            color: #FFFFFF;
+        }
+
+        .username {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(90deg, #4C2EB6, #482BB3);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .logout-btn:hover {
+            background: linear-gradient(90deg, #482BB3, #4C2EB6);
+            box-shadow: 0 5px 15px rgba(76, 46, 182, 0.4);
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        @keyframes grow {
+            from { transform: scale(1); opacity: 1; }
+            to { transform: scale(10); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Rest of your HTML remains exactly the same -->
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo">AdptivEd</div>
+            <div class="category-buttons">
+                <button class="category-btn active" onclick="filterVideos('all')">All Videos</button>
+                <button class="category-btn" onclick="navigateTo('here_movie.html')">Entertainment</button>
+                <button class="category-btn" onclick="navigateTo('loc.html')">Sci-Loc</button>
+                <button class="category-btn" onclick="navigateTo('scratch.html')">Notes</button>
+                <button class="category-btn" onclick="filterVideos('nature')">Nature</button>
+                <button class="category-btn" onclick="filterVideos('tech')">Technology</button>
+                <button class="category-btn" onclick="navigateTo('mentalwellbeing.html')">Mental health</button>
+            </div>
+
+            <div class="user-info">
+                <div class="username">Welcome, <span id="username-display"></span></div>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search videos..." id="searchInput" onkeyup="searchVideos()">
+                <button class="search-btn" onclick="searchVideos()">Search</button>
+            </div>
+
+            <div class="active-category" id="activeCategory">All Videos</div>
+
+            <div class="videos-grid" id="videosGrid">
+                <!-- Video cards will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Keep all your original JavaScript exactly as is -->
+    <script>
+        // All your original JavaScript code remains unchanged
+        // Sample video data
+        const videos = [
+            {
+                id: 1,
+                title: "Amazing Space Discoveries of 2024",
+                thumbnail: "/api/placeholder/400/320",
+                category: "sci-loc"
+            },
+            // ... rest of your video data
+        ];
+
+        // Current filter state
+        let currentFilter = 'all';
+        let searchQuery = '';
+
+        // Display username and initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            const username = localStorage.getItem('loggedInUser');
+            if (username) {
+                document.getElementById('username-display').textContent = username;
+            } else {
+                window.location.href = 'login.html';
+            }
+
+            displayVideos();
+        });
+
+        // Navigate to another page
+        function navigateTo(url) {
+            window.location.href = url;
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('loggedInUser');
+            window.location.href = 'login.html';
+        }
+
+        // Filter videos by category
+        function filterVideos(category) {
+            currentFilter = category;
+            document.getElementById('activeCategory').textContent =
+                category === 'all' ? 'All Videos' :
+                category === 'sci-loc' ? 'Science & Location' :
+                category.charAt(0).toUpperCase() + category.slice(1);
+
+            // Update active button
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Clear search when changing categories
+            document.getElementById('searchInput').value = '';
+            searchQuery = '';
+
+            displayVideos();
+        }
+
+        // Search videos
+        function searchVideos() {
+            searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            displayVideos();
+        }
+
+        // Display videos based on current filter and search
+        function displayVideos() {
+            const videosGrid = document.getElementById('videosGrid');
+            videosGrid.innerHTML = ''; // Clear current videos
+
+            const filteredVideos = videos.filter(video => {
+                const matchesCategory = currentFilter === 'all' || video.category === currentFilter;
+                const matchesSearch = searchQuery === '' ||
+                    video.title.toLowerCase().includes(searchQuery);
+                return matchesCategory && matchesSearch;
+            });
+
+            if (filteredVideos.length === 0) {
+                videosGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: rgba(255,255,255,0.7);">No videos found. Try a different search or category.</p>';
+                return;
+            }
+
+            filteredVideos.forEach(video => {
+                const videoCard = `
+                    <div class="video-card" data-id="${video.id}">
+                        <div class="video-thumbnail">
+                            <img src="${video.thumbnail}" alt="${video.title}">
+                            <div class="play-icon"></div>
+                        </div>
+                        <div class="video-info">
+                            <div class="video-title">${video.title}</div>
+                            <span class="video-category">${getCategoryName(video.category)}</span>
+                        </div>
+                    </div>
+                `;
+                videosGrid.innerHTML += videoCard;
+            });
+
+            // Add click event listeners to video cards
+            document.querySelectorAll('.video-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const videoId = card.getAttribute('data-id');
+                    alert(Playing video #${videoId}: ${videos.find(v => v.id == videoId).title});
+                });
+            });
+        }
+
+        // Helper function to get readable category names
+        function getCategoryName(category) {
+            switch(category) {
+                case 'sci-loc': return 'Science & Location';
+                case 'entertainment': return 'Entertainment';
+                case 'nature': return 'Nature';
+                case 'tech': return 'Technology';
+                default: return category.charAt(0).toUpperCase() + category.slice(1);
+            }
+        }
+
+        // Cursor Ripple Effect
+        document.addEventListener("mousemove", (e) => {
+            let cursorDot = document.querySelector(".cursor-dot");
+            if (!cursorDot) {
+                cursorDot = document.createElement("div");
+                cursorDot.className = "cursor-dot";
+                document.body.appendChild(cursorDot);
+            }
+            cursorDot.style.left = ${e.clientX}px;
+            cursorDot.style.top = ${e.clientY}px;
+
+            let ripple = document.createElement("div");
+            ripple.className = "ripple";
+            document.body.appendChild(ripple);
+            ripple.style.left = ${e.clientX}px;
+            ripple.style.top = ${e.clientY}px;
+            setTimeout(() => ripple.remove(), 300);
+        });
+
+        document.addEventListener("click", (e) => {
+            let circle = document.createElement("div");
+            circle.className = "circle";
+            document.body.appendChild(circle);
+            circle.style.left = ${e.clientX}px;
+            circle.style.top = ${e.clientY}px;
+            setTimeout(() => circle.remove(), 800);
+        });
+    </script>
+</body>
+</html>
