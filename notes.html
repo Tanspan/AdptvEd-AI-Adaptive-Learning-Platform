@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Notes</title>
+    <style>
+        :root {
+            --dark-bg: #121212;
+            --darker-bg: #0a0a0a;
+            --panel-dark: #1e1e1e;
+            --panel-light: #252525;
+            --accent-color: #BB86FC;
+            --accent-secondary: #3700B3;
+            --text-primary: #FFFFFF;
+            --text-secondary: #B0B0B0;
+            --error-color: #CF6679;
+            --success-color: #03DAC6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
+            padding: 20px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Starry Background */
+        .starry-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(ellipse at bottom, #1A1A2E 0%, #16213E 100%);
+            overflow: hidden;
+        }
+
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+        }
+
+        /* Main App Container */
+        .app-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background-color: var(--panel-dark);
+            color: var(--text-primary);
+            border-radius: 12px;
+            padding: 20px;
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .sidebar h2 {
+            color: var(--accent-color);
+            margin-bottom: 20px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .notes-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .note-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: rgba(187, 134, 252, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .note-item:hover {
+            background-color: rgba(187, 134, 252, 0.2);
+            transform: translateX(5px);
+        }
+
+        .note-item::before {
+            content: '';
+            position: absolute;
+            left: -100%;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: 0.5s;
+        }
+
+        .note-item:hover::before {
+            left: 100%;
+        }
+
+        .note-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .note-preview {
+            font-size: 13px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .note-editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--panel-dark);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        #noteArea {
+            flex: 1;
+            padding: 20px;
+            border: none;
+            resize: none;
+            font-size: 16px;
+            line-height: 1.6;
+            background-color: var(--panel-dark);
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        #noteArea:focus {
+            outline: none;
+        }
+
+        #noteArea::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        .prediction-bar {
+            padding: 12px 20px;
+            background-color: var(--panel-light);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .prediction-tag {
+            background-color: var(--accent-secondary);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .prediction-tag:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            padding: 12px 20px;
+            background-color: var(--panel-light);
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .save-btn {
+            background-color: var(--accent-color);
+            color: var(--dark-bg);
+        }
+
+        .save-btn:hover {
+            background-color: #9c64f5;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(187, 134, 252, 0.3);
+        }
+
+        .clear-btn {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .clear-btn:hover {
+            background-color: #b85a6a;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(207, 102, 121, 0.3);
+        }
+
+        .status-message {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-left: auto;
+            transition: all 0.3s ease;
+        }
+
+        .error {
+            background-color: rgba(207, 102, 121, 0.2);
+            color: var(--error-color);
+        }
+
+        .success {
+            background-color: rgba(3, 218, 198, 0.2);
+            color: var(--success-color);
+        }
+
+        /* Scratch Pad */
+        .scratch-pad {
+            height: 200px;
+            background-color: var(--panel-dark);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        /* Cursor Effects */
+        .cursor-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            opacity: 0.7;
+            z-index: 9999;
+        }
+
+        .ripple {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: rgba(187, 134, 252, 0.4);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: fadeOut 0.5s linear;
+            z-index: 9998;
+        }
+
+        .circle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: rgba(187, 134, 252, 0.2);
+            border-radius: 50%;
+            transform: scale(1);
+            pointer-events: none;
+            animation: grow 0.8s linear;
+            z-index: 9997;
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        @keyframes grow {
+            from { transform: scale(1); opacity: 1; }
+            to { transform: scale(10); opacity: 0; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .sidebar {
+                height: auto;
+                max-height: 250px;
+            }
+
+            .scratch-pad {
+                height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="starry-bg" id="starryBg"></div>
+
+    <div class="app-container">
+        <div class="sidebar">
+            <h2>✨ Notes</h2>
+            <ul class="notes-list" id="noteList">
+                <!-- Notes will be loaded here -->
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <div class="note-editor">
+                <textarea id="noteArea" placeholder="Write your cosmic thoughts here..."></textarea>
+
+                <div class="prediction-bar" id="predictionBar">
+                    <span>AI Suggestions:</span>
+                    <!-- Predictions will appear here -->
+                </div>
+
+                <div class="toolbar">
+                    <button class="btn save-btn" onclick="saveNote()">Save</button>
+                    <button class="btn clear-btn" onclick="clearNote()">Clear</button>
+                    <div class="status-message" id="statusMessage"></div>
+                </div>
+            </div>
+
+            <canvas class="scratch-pad" id="scratchPad"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Create starry background
+        function createStars() {
+            const starryBg = document.getElementById('starryBg');
+            const starCount = 100;
+
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+
+                star.style.width = `${Math.random() * 2}px`;
+                star.style.height = star.style.width;
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.opacity = Math.random();
+
+                starryBg.appendChild(star);
+            }
+        }
+
+        // DOM Elements
+        const noteArea = document.getElementById('noteArea');
+        const predictionBar = document.getElementById('predictionBar');
+        const noteList = document.getElementById('noteList');
+        const statusMessage = document.getElementById('statusMessage');
+        let currentPredictions = [];
+        let debounceTimer;
+
+        // Initialize on load
+        window.onload = function() {
+            createStars();
+            loadNotes();
+            initScratchPad();
+            setupEventListeners();
+            setupCursorEffects();
+        };
+
+        // Note Management Functions
+        function saveNote() {
+            const text = noteArea.value.trim();
+            if (!text) {
+                showStatus('Cannot save empty note', true);
+                return;
+            }
+
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            const newNote = {
+                id: Date.now(),
+                content: text,
+                createdAt: new Date().toISOString()
+            };
+
+            notes.unshift(newNote); // Add to beginning
+            localStorage.setItem('notes', JSON.stringify(notes));
+
+            loadNotes();
+            showStatus('Note saved successfully');
+        }
+
+        function loadNotes() {
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            noteList.innerHTML = '';
+
+            if (notes.length === 0) {
+                noteList.innerHTML = '<li style="text-align:center; opacity:0.7;">No notes yet</li>';
+                return;
+            }
+
+            notes.forEach(note => {
+                const li = document.createElement('li');
+                li.className = 'note-item';
+                li.innerHTML = `
+                    <div class="note-title">${note.content.substring(0, 30)}${note.content.length > 30 ? '...' : ''}</div>
+                    <div class="note-preview">${new Date(note.createdAt).toLocaleString()}</div>
+                `;
+                li.addEventListener('click', () => loadNote(note.content));
+                noteList.appendChild(li);
+            });
+        }
+
+        function loadNote(content) {
+            noteArea.value = content;
+            updatePredictions(); // Get predictions for loaded note
+            noteArea.focus();
+        }
+
+        function clearNote() {
+            if (noteArea.value.trim() === '' || confirm('Clear current note?')) {
+                noteArea.value = '';
+                clearPredictions();
+                clearScratchPad();
+                showStatus('Cleared');
+            }
+        }
+
+        function showStatus(message, isError = false) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${isError ? 'error' : 'success'}`;
+            setTimeout(() => statusMessage.textContent = '', 3000);
+        }
+
+        // Prediction System
+        function setupEventListeners() {
+            noteArea.addEventListener('input', handleTextInput);
+            noteArea.addEventListener('keydown', handleKeyPress);
+        }
+
+        function handleTextInput() {
+            clearTimeout(debounceTimer);
+
+            if (noteArea.value.trim().length === 0) {
+                clearPredictions();
+                return;
+            }
+
+            debounceTimer = setTimeout(updatePredictions, 300);
+        }
+
+        function handleKeyPress(e) {
+            // Tab to accept first prediction
+            if (e.key === 'Tab' && currentPredictions.length > 0) {
+                e.preventDefault();
+                acceptPrediction(currentPredictions[0]);
+            }
+        }
+
+        async function updatePredictions() {
+            const text = noteArea.value;
+            if (!text.trim()) return;
+
+            try {
+                const response = await fetch('http://localhost:5000/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    showStatus(data.error, true);
+                    clearPredictions();
+                } else if (data.prediction) {
+                    currentPredictions = data.prediction.split(' ');
+                    renderPredictions();
+                }
+            } catch (error) {
+                showStatus('Prediction service unavailable', true);
+                console.error('Prediction error:', error);
+            }
+        }
+
+        function renderPredictions() {
+            predictionBar.innerHTML = '<span>AI Suggestions:</span>';
+
+            currentPredictions.forEach(word => {
+                const tag = document.createElement('span');
+                tag.className = 'prediction-tag';
+                tag.textContent = word;
+                tag.addEventListener('click', () => acceptPrediction(word));
+                predictionBar.appendChild(tag);
+            });
+        }
+
+        function acceptPrediction(word) {
+            const cursorPos = noteArea.selectionStart;
+            const textBefore = noteArea.value.substring(0, cursorPos);
+            const textAfter = noteArea.value.substring(cursorPos);
+
+            // Add space if needed
+            const insertSpace = cursorPos > 0 && !textBefore.endsWith(' ');
+            noteArea.value = textBefore + (insertSpace ? ' ' : '') + word + textAfter;
+
+            // Position cursor after inserted word
+            const newCursorPos = cursorPos + (insertSpace ? 1 : 0) + word.length;
+            noteArea.setSelectionRange(newCursorPos, newCursorPos);
+            noteArea.focus();
+
+            // Get new predictions
+            updatePredictions();
+        }
+
+        function clearPredictions() {
+            predictionBar.innerHTML = '';
+            currentPredictions = [];
+        }
+
+        // Scratch Pad
+        function initScratchPad() {
+            const canvas = document.getElementById('scratchPad');
+            const ctx = canvas.getContext('2d');
+            let isDrawing = false;
+
+            // Set canvas dimensions
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            // Drawing style
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
+            ctx.lineJoin = 'round';
+
+            // Event listeners
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+
+            function startDrawing(e) {
+                isDrawing = true;
+                ctx.beginPath();
+                ctx.moveTo(
+                    e.clientX - canvas.offsetLeft,
+                    e.clientY - canvas.offsetTop
+                );
+            }
+
+            function draw(e) {
+                if (!isDrawing) return;
+                ctx.lineTo(
+                    e.clientX - canvas.offsetLeft,
+                    e.clientY - canvas.offsetTop
+                );
+                ctx.stroke();
+            }
+
+            function stopDrawing() {
+                isDrawing = false;
+            }
+        }
+
+        function clearScratchPad() {
+            const canvas = document.getElementById('scratchPad');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Cursor Effects
+        function setupCursorEffects() {
+            document.addEventListener("mousemove", (e) => {
+                let cursorDot = document.querySelector(".cursor-dot");
+                if (!cursorDot) {
+                    cursorDot = document.createElement("div");
+                    cursorDot.className = "cursor-dot";
+                    document.body.appendChild(cursorDot);
+                }
+                cursorDot.style.left = `${e.clientX}px`;
+                cursorDot.style.top = `${e.clientY}px`;
+
+                let ripple = document.createElement("div");
+                ripple.className = "ripple";
+                document.body.appendChild(ripple);
+                ripple.style.left = `${e.clientX}px`;
+                ripple.style.top = `${e.clientY}px`;
+                setTimeout(() => ripple.remove(), 300);
+            });
+
+            document.addEventListener("click", (e) => {
+                let circle = document.createElement("div");
+                circle.className = "circle";
+                document.body.appendChild(circle);
+                circle.style.left = `${e.clientX}px`;
+                circle.style.top = `${e.clientY}px`;
+                setTimeout(() => circle.remove(), 800);
+            });
+
+            // Change cursor on interactive elements
+            const interactiveElements = document.querySelectorAll('button, .note-item, .prediction-tag, textarea');
+            interactiveElements.forEach(el => {
+                el.addEventListener('mouseenter', () => {
+                    const cursorDot = document.querySelector('.cursor-dot');
+                    if (cursorDot) {
+                        cursorDot.style.transform = 'translate(-50%, -50%) scale(1.5)';
+                        cursorDot.style.backgroundColor = 'var(--accent-color)';
+                    }
+                });
+
+                el.addEventListener('mouseleave', () => {
+                    const cursorDot = document.querySelector('.cursor-dot');
+                    if (cursorDot) {
+                        cursorDot.style.transform = 'translate(-50%, -50%) scale(1)';
+                        cursorDot.style.backgroundColor = 'var(--accent-color)';
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>

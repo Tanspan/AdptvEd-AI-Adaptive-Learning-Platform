@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Chatbot with Gemini AI</title>
+    <style>
+        /* Core styles */
+        :root {
+            --primary-color: #4e6ef2;
+            --secondary-color: #f2f2f7;
+            --text-color: #333;
+            --light-text: #666;
+            --bot-message-bg: #e1ebfd;
+            --user-message-bg: #4e6ef2;
+            --user-message-color: #fff;
+            --border-radius: 18px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            background-color: #fafafa;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        /* Chat container */
+        .chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            height: 500px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .chat-container.minimized {
+            transform: translateY(calc(100% - 60px));
+        }
+
+        /* Chat header */
+        .chat-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .chat-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-avatar {
+            width: 30px;
+            height: 30px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            opacity: 0.8;
+            transition: var(--transition);
+        }
+
+        .action-button:hover {
+            opacity: 1;
+        }
+
+        /* Chat messages area */
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: var(--border-radius);
+            position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bot-message {
+            background: var(--bot-message-bg);
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+
+        .user-message {
+            background: var(--user-message-bg);
+            color: var(--user-message-color);
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message-time {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 10px 15px;
+            background: var(--bot-message-bg);
+            border-radius: var(--border-radius);
+            border-bottom-left-radius: 5px;
+            align-self: flex-start;
+            width: fit-content;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            opacity: 0.6;
+        }
+
+        .typing-dot:nth-child(1) {
+            animation: bounce 1.2s infinite 0s;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation: bounce 1.2s infinite 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation: bounce 1.2s infinite 0.4s;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* Chat input area */
+        .chat-input-area {
+            padding: 15px;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input-box {
+            flex: 1;
+            border: 1px solid #e0e0e0;
+            border-radius: 25px;
+            padding: 10px 15px;
+            font-size: 14px;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .chat-input-box:focus {
+            box-shadow: 0 0 0 2px rgba(78, 110, 242, 0.2);
+            border-color: var(--primary-color);
+        }
+
+        .send-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .send-button:hover {
+            background: #3c5bd8;
+            transform: scale(1.05);
+        }
+
+        .send-button:disabled {
+            background: #b0bde3;
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+
+        /* Chat launcher button */
+        .chat-launcher {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            z-index: 999;
+        }
+
+        .chat-launcher:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .chat-launcher-icon {
+            color: white;
+            font-size: 24px;
+        }
+
+        /* Quick replies */
+        .quick-replies {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .quick-reply {
+            background: white;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: 15px;
+            padding: 8px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .quick-reply:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Settings panel */
+        .settings-panel {
+            position: absolute;
+            top: 60px;
+            right: 0;
+            width: 100%;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            z-index: 1001;
+            transform: translateY(-100%);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .settings-panel.active {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .settings-panel h3 {
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-size: 16px;
+        }
+
+        .settings-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            color: var(--light-text);
+        }
+
+        .form-group input {
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .settings-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .settings-button {
+            flex: 1;
+            padding: 8px;
+            border-radius: 6px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .save-button {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .cancel-button {
+            background: #e0e0e0;
+            color: var(--text-color);
+        }
+
+        /* AI model selector */
+        .model-selector {
+            margin-top: 10px;
+        }
+
+        .model-selector select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            background-color: white;
+        }
+
+        /* Responsive adjustments */
+        @media screen and (max-width: 480px) {
+            .chat-container {
+                width: 100%;
+                height: 100%;
+                bottom: 0;
+                right: 0;
+                border-radius: 0;
+            }
+
+            .chat-container.minimized {
+                transform: translateY(calc(100% - 60px));
+            }
+
+            .chat-launcher {
+                bottom: 20px;
+                right: 20px;
+            }
+        }
+
+        /* Hide launcher when chat is open */
+        .chat-container:not(.minimized) ~ .chat-launcher {
+            display: none;
+        }
+
+        /* Error message style */
+        .error-message {
+            color: #d32f2f;
+            font-size: 14px;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(211, 47, 47, 0.1);
+            border-radius: 6px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Chat container -->
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header" id="chatHeader">
+            <div class="chat-title">
+                <div class="chat-avatar">G</div>
+                <span>AdptvEd Bot</span>
+            </div>
+            <div class="chat-actions">
+                <button class="action-button" id="settingsButton">⚙️</button>
+                <button class="action-button" id="minimizeChat">−</button>
+            </div>
+        </div>
+
+        <!-- Settings panel -->
+        <div class="settings-panel" id="settingsPanel">
+            <h3>API Settings</h3>
+            <div class="settings-form">
+                <div class="form-group">
+                    <label for="apiKey">Gemini API Key</label>
+                    <input type="password" id="apiKey" placeholder="Enter your Gemini API key">
+                </div>
+                <div class="form-group model-selector">
+                    <label for="modelSelect">AI Model</label>
+                    <select id="modelSelect">
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                        <option value="gemini-1.0-pro">Gemini 1.0 Pro</option>
+                    </select>
+                </div>
+                <div class="settings-buttons">
+                    <button class="settings-button save-button" id="saveSettings">Save</button>
+                    <button class="settings-button cancel-button" id="cancelSettings">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages will be added here dynamically -->
+        </div>
+        <div class="chat-input-area">
+            <input
+                type="text"
+                class="chat-input-box"
+                id="userInput"
+                placeholder="Type your message..."
+                autocomplete="off"
+            >
+            <button class="send-button" id="sendMessage" disabled>
+                →
+            </button>
+        </div>
+    </div>
+
+    <!-- Chat launcher button -->
+    <div class="chat-launcher" id="chatLauncher">
+        <div class="chat-launcher-icon">💬</div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const chatContainer = document.getElementById('chatContainer');
+            const chatMessages = document.getElementById('chatMessages');
+            const userInput = document.getElementById('userInput');
+            const sendButton = document.getElementById('sendMessage');
+            const minimizeButton = document.getElementById('minimizeChat');
+            const chatLauncher = document.getElementById('chatLauncher');
+            const chatHeader = document.getElementById('chatHeader');
+            const settingsButton = document.getElementById('settingsButton');
+            const settingsPanel = document.getElementById('settingsPanel');
+            const saveSettingsButton = document.getElementById('saveSettings');
+            const cancelSettingsButton = document.getElementById('cancelSettings');
+            const apiKeyInput = document.getElementById('apiKey');
+            const modelSelect = document.getElementById('modelSelect');
+
+            // State variables
+            let isTyping = false;
+            let apiKey = localStorage.getItem('geminiApiKey') || '';
+            let selectedModel = localStorage.getItem('selectedModel') || 'gemini-1.5-pro';
+            let conversationHistory = [];
+
+            // Initialize
+            init();
+
+            function init() {
+                // Load saved API key and model
+                if (apiKey) {
+                    apiKeyInput.value = apiKey;
+                    userInput.disabled = false;
+                    sendButton.disabled = false;
+                }
+
+                if (selectedModel) {
+                    modelSelect.value = selectedModel;
+                }
+
+                // Add welcome message
+                addBotMessage("Hi there! 👋 I'm your AdptvEd AI assistant. How can I help you today?");
+
+                // Add quick reply suggestions
+                addQuickReplies([
+                    "Tell me about yourself",
+                    "What can you do?",
+                    "Help me with coding"
+                ]);
+
+                // Set up event listeners
+                setupEventListeners();
+            }
+
+            function setupEventListeners() {
+                // Toggle chat visibility
+                chatLauncher.addEventListener('click', () => {
+                    chatContainer.classList.remove('minimized');
+                });
+
+                minimizeButton.addEventListener('click', () => {
+                    chatContainer.classList.add('minimized');
+                });
+
+                chatHeader.addEventListener('click', (e) => {
+                    // Prevent minimizing when clicking settings or minimize buttons
+                    if (e.target === chatHeader || e.target.parentNode === chatHeader) {
+                        chatContainer.classList.toggle('minimized');
+                    }
+                });
+
+                // Send message on button click
+                sendButton.addEventListener('click', sendMessage);
+
+                // Send message on Enter key
+                userInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        sendMessage();
+                    }
+                });
+
+                // Enable/disable send button based on input
+                userInput.addEventListener('input', () => {
+                    sendButton.disabled = userInput.value.trim() === '';
+                });
+
+                // Settings panel
+                settingsButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    settingsPanel.classList.toggle('active');
+                });
+
+                saveSettingsButton.addEventListener('click', saveSettings);
+                cancelSettingsButton.addEventListener('click', () => {
+                    // Reset to saved values
+                    apiKeyInput.value = apiKey || '';
+                    modelSelect.value = selectedModel || 'gemini-1.5-pro';
+                    settingsPanel.classList.remove('active');
+                });
+            }
+
+            function saveSettings() {
+                const newApiKey = apiKeyInput.value.trim();
+                const newModel = modelSelect.value;
+
+                if (newApiKey) {
+                    apiKey = newApiKey;
+                    localStorage.setItem('geminiApiKey', apiKey);
+                    userInput.disabled = false;
+                    sendButton.disabled = userInput.value.trim() === '';
+                } else {
+                    alert('API Key is required');
+                    return;
+                }
+
+                selectedModel = newModel;
+                localStorage.setItem('selectedModel', selectedModel);
+
+                settingsPanel.classList.remove('active');
+
+                // Add confirmation message
+                addBotMessage(`Settings saved! Using model: ${modelSelect.options[modelSelect.selectedIndex].text}`);
+            }
+
+            function sendMessage() {
+                const message = userInput.value.trim();
+                if (message === '') return;
+
+                // Add user message to chat
+                addUserMessage(message);
+
+                // Clear input
+                userInput.value = '';
+                sendButton.disabled = true;
+
+                // Check if API key is set
+                if (!apiKey) {
+                    settingsPanel.classList.add('active');
+                    addBotMessage("Please enter your Gemini API key to continue.");
+                    return;
+                }
+
+                // Add to conversation history
+                conversationHistory.push({ role: "user", parts: [{ text: message }] });
+
+                // Show typing indicator
+                showTypingIndicator();
+
+                // Send to Gemini API
+                fetchGeminiResponse(message);
+            }
+
+            async function fetchGeminiResponse(message) {
+                try {
+                    // Prepare the request body
+                    const requestBody = {
+                        contents: conversationHistory
+                    };
+
+                    // Get the specific model endpoint
+                    const modelEndpoint = getModelEndpoint();
+
+                    // Make API request
+                    const response = await fetch(modelEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-goog-api-key': apiKey
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    // Handle response
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error?.message || 'Error communicating with Gemini API');
+                    }
+
+                    const data = await response.json();
+                    const botResponse = data.candidates[0].content.parts[0].text;
+
+                    // Add to conversation history
+                    conversationHistory.push({ role: "model", parts: [{ text: botResponse }] });
+
+                    // Remove typing indicator and add bot message
+                    hideTypingIndicator();
+                    addBotMessage(botResponse);
+
+                    // Check if we should suggest follow-up questions
+                    if (shouldSuggestFollowUps()) {
+                        suggestFollowUpQuestions(message, botResponse);
+                    }
+                } catch (error) {
+                    // Handle errors
+                    console.error('Gemini API Error:', error);
+                    hideTypingIndicator();
+                    addErrorMessage(error.message);
+                }
+            }
+
+            function getModelEndpoint() {
+                // Base URL for Gemini API
+                const baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
+
+                // Build endpoint based on selected model
+                return `${baseUrl}/models/${selectedModel}:generateContent`;
+            }
+
+            function addUserMessage(text) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message user-message';
+                messageDiv.innerText = text;
+
+                const timeSpan = document.createElement('div');
+                timeSpan.className = 'message-time';
+                timeSpan.innerText = getTimeString();
+                messageDiv.appendChild(timeSpan);
+
+                chatMessages.appendChild(messageDiv);
+                scrollToBottom();
+            }
+
+            function addBotMessage(text) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message bot-message';
+
+                // Convert URLs to clickable links
+                const formattedText = text.replace(
+                    /(https?:\/\/[^\s]+)/g,
+                    '<a href="$1" target="_blank" style="color:#4e6ef2;text-decoration:underline;">$1</a>'
+                );
+
+                messageDiv.innerHTML = formattedText;
+
+                const timeSpan = document.createElement('div');
+                timeSpan.className = 'message-time';
+                timeSpan.innerText = getTimeString();
+                messageDiv.appendChild(timeSpan);
+
+                chatMessages.appendChild(messageDiv);
+                scrollToBottom();
+            }
+
+            function addErrorMessage(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.innerText = `Error: ${message}`;
+                chatMessages.appendChild(errorDiv);
+                scrollToBottom();
+            }
+
+            function showTypingIndicator() {
+                if (isTyping) return;
+
+                isTyping = true;
+                const indicator = document.createElement('div');
+                indicator.className = 'typing-indicator';
+                indicator.id = 'typingIndicator';
+
+                for (let i = 0; i < 3; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'typing-dot';
+                    indicator.appendChild(dot);
+                }
+
+                chatMessages.appendChild(indicator);
+                scrollToBottom();
+            }
+
+            function hideTypingIndicator() {
+                const indicator = document.getElementById('typingIndicator');
+                if (indicator) {
+                    indicator.remove();
+                }
+                isTyping = false;
+            }
+
+            function scrollToBottom() {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            function getTimeString() {
+                const now = new Date();
+                return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            function addQuickReplies(suggestions) {
+                const quickRepliesDiv = document.createElement('div');
+                quickRepliesDiv.className = 'quick-replies';
+
+                suggestions.forEach(suggestion => {
+                    const quickReply = document.createElement('div');
+                    quickReply.className = 'quick-reply';
+                    quickReply.innerText = suggestion;
+                    quickReply.addEventListener('click', () => {
+                        userInput.value = suggestion;
+                        sendButton.disabled = false;
+                        sendMessage();
+                    });
+
+                    quickRepliesDiv.appendChild(quickReply);
+                });
+
+                chatMessages.appendChild(quickRepliesDiv);
+                scrollToBottom();
+            }
+
+            function shouldSuggestFollowUps() {
+                // Only suggest follow-ups occasionally
+                return conversationHistory.length % 3 === 0;
+            }
+
+            function suggestFollowUpQuestions(userMessage, botResponse) {
+                // Simple follow-up suggestions based on context
+                let suggestions = [];
+
+                if (userMessage.toLowerCase().includes('code') || botResponse.toLowerCase().includes('code')) {
+                    suggestions = ["Can you explain this code?", "How do I optimize this?", "Write a similar function"];
+                } else if (userMessage.toLowerCase().includes('help') || userMessage.toLowerCase().includes('how to')) {
+                    suggestions = ["Tell me more", "Are there alternatives?", "Can you give an example?"];
+                } else {
+                    suggestions = ["Tell me more", "Why is this important?", "How does this work?"];
+                }
+
+                addQuickReplies(suggestions);
+            }
+        });
+    </script>
+</body>
+</html>
